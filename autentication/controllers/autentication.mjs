@@ -42,4 +42,32 @@ const login = async (req, res) => {
     res.status(500).send({ message: "Internal Server Error" });
   }
 };
-export { login};
+//funzione di registrazione
+const signup = async (req, res) => {
+  // Estrae il nome utente e la password dalla richiesta
+  const { username, password } = req.body;
+  //controlla che lo username non esista gia'nel database
+  const user = await db.oneOrNone(
+    "SELECT * FROM users WHERE username=$1",
+    username
+  );
+  //se seiste
+  if (user) {
+    //lancia un errore
+    res.status(409).json({ message: "User already exists." });
+  } else {
+    //se non esiste, lo inserisce nel database
+    const { id } = await db.one(
+      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id",
+      [username, password]
+    );
+    //messaggio di risposta
+    res.status(201).json({ id, msg: "User created successfully!" });
+  }
+};
+const logout = async (req, res)=>{
+  const user = req.user;
+  await db.none('UPDATE users SET token= $2 WHERE id=$1', [user.id, null])
+  res.status(200).json({msg: 'Logged out!'})
+}
+export { login, signup, logout };
